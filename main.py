@@ -33,9 +33,10 @@ async def on_ready():
     print("Status set to DND, activity: Playing Buckingham Palace")
 
 # -------- Auto role and member --------
+# IDs
 AUTO_ROLE_ID = 1448918566035263637
-LOG_CHANNEL_ID = 1460757142972665998  # channel where the message is
-LOG_MESSAGE_ID = 1460757287672217600  # the message the bot edits
+LOG_CHANNEL_ID = 1460757142972665998
+LOG_MESSAGE_ID = 1460757287672217600
 
 @bot.event
 async def on_member_join(member):
@@ -43,22 +44,22 @@ async def on_member_join(member):
     role = member.guild.get_role(AUTO_ROLE_ID)
     if role:
         await member.add_roles(role)
-    
-    # 2️⃣ Append join to log message
+
+    # 2️⃣ Append new member to log message
     channel = bot.get_channel(LOG_CHANNEL_ID)
     if channel is None:
-        return  # channel not found
+        return
 
     try:
         message = await channel.fetch_message(LOG_MESSAGE_ID)
     except discord.NotFound:
-        return  # message not found
+        return
 
-    # Generate Discord timestamp
+    # Generate current timestamp
     timestamp = int(time.time())
     new_entry = f"- {member.mention} | <t:{timestamp}>\n"
 
-    # Append new entry to existing message
+    # Append as a new line only
     updated_content = message.content + new_entry
     await message.edit(content=updated_content)
     

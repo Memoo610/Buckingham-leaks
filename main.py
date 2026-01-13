@@ -2,7 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from datetime import timedelta
+import time
 import os
+
 
 TOKEN = os.getenv("TOKEN")
 REPORT_RECEIVER_IDS = [
@@ -17,6 +19,8 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -28,6 +32,36 @@ async def on_ready():
     )
     print("Status set to DND, activity: Playing Buckingham Palace")
 
+# -------- Auto role and member --------
+AUTO_ROLE_ID = 1448918566035263637
+LOG_CHANNEL_ID = 1460757142972665998  # channel where the message is
+LOG_MESSAGE_ID = 1460757287672217600  # the message the bot edits
+
+@bot.event
+async def on_member_join(member):
+    # 1️⃣ Add auto role
+    role = member.guild.get_role(AUTO_ROLE_ID)
+    if role:
+        await member.add_roles(role)
+    
+    # 2️⃣ Append join to log message
+    channel = bot.get_channel(LOG_CHANNEL_ID)
+    if channel is None:
+        return  # channel not found
+
+    try:
+        message = await channel.fetch_message(LOG_MESSAGE_ID)
+    except discord.NotFound:
+        return  # message not found
+
+    # Generate Discord timestamp
+    timestamp = int(time.time())
+    new_entry = f"- {member.mention} | <t:{timestamp}>\n"
+
+    # Append new entry to existing message
+    updated_content = message.content + new_entry
+    await message.edit(content=updated_content)
+    
 # -------- EMBED BUILDER --------
 def mod_embed(guild, action, reason, moderator: discord.Member):
     role = moderator.top_role.name if moderator.top_role else "Staff"

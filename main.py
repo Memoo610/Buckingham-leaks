@@ -33,7 +33,6 @@ async def on_ready():
     print("Status set to DND, activity: Playing Buckingham Palace")
 
 # -------- Auto role and member --------
-# IDs
 AUTO_ROLE_ID = 1448918566035263637
 LOG_CHANNEL_ID = 1460757142972665998
 LOG_MESSAGE_ID = 1460757287672217600
@@ -55,14 +54,13 @@ async def on_member_join(member):
     except discord.NotFound:
         return
 
-    # Generate current timestamp
+    # Generate timestamp
     timestamp = int(time.time())
-    new_entry = f"- {member.mention} | <t:{timestamp}>\n"
-
-    # Append as a new line only
-    updated_content = message.content + new_entry
+    # Format with Discord timestamp
+    new_entry = f"- {member.mention} | <t:{timestamp}:f>\n"  # :f gives full date/time
+    # Append with extra newline to ensure it renders properly
+    updated_content = message.content + "\n" + new_entry
     await message.edit(content=updated_content)
-    
 # -------- EMBED BUILDER --------
 def mod_embed(guild, action, reason, moderator: discord.Member):
     role = moderator.top_role.name if moderator.top_role else "Staff"

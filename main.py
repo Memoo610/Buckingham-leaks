@@ -5,7 +5,12 @@ from datetime import timedelta
 import os
 
 TOKEN = os.getenv("TOKEN")
-REPORT_RECEIVER_ID = 1424111016450592879
+REPORT_RECEIVER_IDS = [
+    1424111016450592879,  
+    1441741248451973241,   
+    1444568142545162319    
+]
+
 
 intents = discord.Intents.default()
 intents.members = True
@@ -16,6 +21,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
+
+    await bot.change_presence(
+        status=discord.Status.dnd,
+        activity=discord.Game(name="Buckingham Palace")
+    )
+    print("Status set to DND, activity: Playing Buckingham Palace")
 
 # -------- EMBED BUILDER --------
 def mod_embed(guild, action, reason, moderator: discord.Member):
@@ -94,7 +105,7 @@ async def warn(interaction: discord.Interaction, member: discord.Member, reason:
 @bot.tree.command(name="notice", description="Send a notice to a member")
 @app_commands.checks.has_permissions(moderate_members=True)
 async def notice(interaction: discord.Interaction, member: discord.Member, message: str):
-    embed = mod_embed(interaction.guild, "noticed", message, interaction.user)
+    embed = mod_embed(interaction.guild, "been sent a notice", message, interaction.user)
 
     try:
         await member.send(embed=embed)

@@ -15,7 +15,7 @@ REPORT_RECEIVER_IDS = [
 
 
 intents = discord.Intents.default()
-intents.members = True
+intents.members = True  
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -25,6 +25,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
+    
+    await bot.load_extension("blacklist")  # filename, no .py
+    await bot.tree.sync()    
 
     await bot.change_presence(
         status=discord.Status.dnd,

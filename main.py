@@ -61,6 +61,90 @@ async def on_member_join(member):
     # Append with extra newline to ensure it renders properly
     updated_content = message.content + "\n" + new_entry
     await message.edit(content=updated_content)
+# -------- Blacklist  --------
+BLACKLIST_CHANNEL_ID = 1461038411661054290
+BLACKLIST_MESSAGE_ID = 1461039199875629207
+
+class Blacklist(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(
+        name="blacklist",
+        description="Toggle blacklist status for a user by ID"
+    )
+    @app_commands.describe(
+        user_id="User ID to blacklist/unblacklist",
+        reason="Reason (required when blacklisting)"
+    )
+    async def blacklist(
+        self,
+        interaction: discord.Interaction,
+        user_id: str,
+        reason: str | None = None
+    ):
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            user = await self.bot.fetch_user(int(user_id))
+            user_mention = user.mention
+        except:
+            user_mention = f"<@{user_id}>"
+
+        channel = self.bot.get_channel(BLACKLIST_CHANNEL_ID)
+        if not channel:
+            await interaction.followup.send("Blacklist channel not found.", ephemeral=True)
+            return
+
+        try:
+            message = await channel.fetch_message(BLACKLIST_MESSAGE_ID)
+        except discord.NotFound:
+            await interaction.followup.send("Blacklist message not found.", ephemeral=True)
+            return
+
+        lines = message.content.splitlines()
+
+        # Check if user is already blacklisted
+        existing_line = next(
+            (line for line in lines if user_mention in line and "Blacklisted by" in line),
+            None
+        )
+
+        if existing_line:
+            # 🔓 UNBLACKLIST
+            lines.remove(existing_line)
+            lines.append(
+                f"- {user_mention} | Unblacklisted by {interaction.user.mention}"
+            )
+
+            await message.edit(content="\n".join(lines))
+            await interaction.followup.send(
+                f"✅ {user_mention} has been **unblacklisted**.",
+                ephemeral=True
+            )
+            return
+
+        # 🚫 BLACKLIST
+        if not reason:
+            await interaction.followup.send(
+                "❌ You must provide a reason when blacklisting.",
+                ephemeral=True
+            )
+            return
+
+        lines.append(
+            f"- {user_mention} | Blacklisted by {interaction.user.mention} | *{reason}*"
+        )
+
+        await message.edit(content="\n".join(lines))
+        await interaction.followup.send(
+            f"🚫 {user_mention} has been **blacklisted**.",
+            ephemeral=True
+        )
+
+async def setup(bot):
+    await bot.add_cog(Blacklist(bot))
+
 # -------- EMBED BUILDER --------
 def mod_embed(guild, action, reason, moderator: discord.Member):
     role = moderator.top_role.name if moderator.top_role else "Staff"

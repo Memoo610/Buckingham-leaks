@@ -36,13 +36,12 @@ async def on_ready():
     print("Status set to DND, activity: Playing Buckingham Palace")
 
 # -------- BLACKLIST --------
-
 BLACKLIST_CHANNEL_ID = 1461038411661054290
 BLACKLIST_MESSAGE_ID = 1461039199875629207
 
-@bot.tree.command(name="blacklist", description="Toggle global blacklist by user ID")
+@bot.tree.command(name="blacklist", description="Toggle global blacklist for a user")
 @app_commands.describe(
-    user_id="User ID to blacklist or unblacklist",
+    user_id="User ID to blacklist/unblacklist",
     reason="Reason (required when blacklisting)"
 )
 async def blacklist(
@@ -52,52 +51,55 @@ async def blacklist(
 ):
     await interaction.response.defer(ephemeral=True)
 
-    # Always format as mention, even if user isn't in server
-    user_mention = f"<@{user_id}>"
+    try:
+        user = await bot.fetch_user(int(user_id))
+    except:
+        await interaction.followup.send("❌ Invalid user ID.", ephemeral=True)
+        return
+
+    nickname = user.global_name or "No Nickname"
+    username = user.name
+    mention = user.mention
 
     channel = bot.get_channel(BLACKLIST_CHANNEL_ID)
     if not channel:
-        await interaction.followup.send("Blacklist channel not found.", ephemeral=True)
+        await interaction.followup.send("❌ Blacklist channel not found.", ephemeral=True)
         return
 
     try:
         message = await channel.fetch_message(BLACKLIST_MESSAGE_ID)
     except discord.NotFound:
-        await interaction.followup.send("Blacklist message not found.", ephemeral=True)
+        await interaction.followup.send("❌ Blacklist message not found.", ephemeral=True)
         return
 
     lines = message.content.splitlines()
 
-    existing_line = next(
-        (line for line in lines if user_mention in line and "Blacklisted by" in line),
-        None
-    )
+    existing = next((l for l in lines if mention in l), None)
 
-    # 🔓 TOGGLE OFF
-    if existing_line:
-        lines.remove(existing_line)
+    # 🔓 UNBLACKLIST
+    if existing:
+        lines.remove(existing)
         await message.edit(content="\n".join(lines))
         await interaction.followup.send(
-            f"✅ {user_mention} has been **unblacklisted**.",
+            f"✅ {mention} has been **unblacklisted**.",
             ephemeral=True
         )
         return
 
-    # 🚫 TOGGLE ON
+    # 🚫 BLACKLIST
     if not reason:
         await interaction.followup.send(
-            "❌ You must provide a reason when blacklisting.",
+            "❌ Reason is required when blacklisting.",
             ephemeral=True
         )
         return
 
-    lines.append(
-        f"- {user_mention} | Blacklisted by {interaction.user.mention} | *{reason}*"
-    )
+    entry = f"- {mention} | {nickname}, {username} | Reason: {reason}"
+    lines.append(entry)
 
     await message.edit(content="\n".join(lines))
     await interaction.followup.send(
-        f"🚫 {user_mention} has been **blacklisted**.",
+        f"🚫 {mention} has been **blacklisted**.",
         ephemeral=True
     )
 

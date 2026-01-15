@@ -26,6 +26,9 @@ async def on_ready():
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
 
+    guild = discord.Object(id=1430593325257461917)
+    await bot.tree.sync(guild=guild)
+
     await bot.change_presence(
         status=discord.Status.dnd,
         activity=discord.Game(name="Buckingham Palace")

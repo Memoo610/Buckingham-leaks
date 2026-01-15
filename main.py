@@ -37,13 +37,12 @@ async def on_ready():
 
 # -------- BLACKLIST --------
 
-BLACKLIST_ROLE_ID = 1448918566035263637
 BLACKLIST_CHANNEL_ID = 1461038411661054290
 BLACKLIST_MESSAGE_ID = 1461039199875629207
 
-@bot.tree.command(name="blacklist", description="Toggle blacklist for a user by ID")
+@bot.tree.command(name="blacklist", description="Toggle global blacklist by user ID")
 @app_commands.describe(
-    user_id="User ID to blacklist / unblacklist",
+    user_id="User ID to blacklist or unblacklist",
     reason="Reason (required when blacklisting)"
 )
 async def blacklist(
@@ -53,45 +52,38 @@ async def blacklist(
 ):
     await interaction.response.defer(ephemeral=True)
 
+    # Always format as mention, even if user isn't in server
+    user_mention = f"<@{user_id}>"
+
+    channel = bot.get_channel(BLACKLIST_CHANNEL_ID)
+    if not channel:
+        await interaction.followup.send("Blacklist channel not found.", ephemeral=True)
+        return
+
     try:
-        member = interaction.guild.get_member(int(user_id))
-    except:
-        member = None
-
-    if member is None:
-        await interaction.followup.send("❌ Member not found in this server.", ephemeral=True)
+        message = await channel.fetch_message(BLACKLIST_MESSAGE_ID)
+    except discord.NotFound:
+        await interaction.followup.send("Blacklist message not found.", ephemeral=True)
         return
 
-    role = interaction.guild.get_role(BLACKLIST_ROLE_ID)
-    if role is None:
-        await interaction.followup.send("❌ Blacklist role not found.", ephemeral=True)
-        return
+    lines = message.content.splitlines()
 
-    channel = interaction.guild.get_channel(BLACKLIST_CHANNEL_ID)
-    if channel is None:
-        await interaction.followup.send("❌ Blacklist channel not found.", ephemeral=True)
-        return
+    existing_line = next(
+        (line for line in lines if user_mention in line and "Blacklisted by" in line),
+        None
+    )
 
-    message = await channel.fetch_message(BLACKLIST_MESSAGE_ID)
-
-    content = message.content.rstrip()  # prevents line merge bug
-    staff = interaction.user.mention
-    target = f"<@{member.id}>"
-
-    # 🔓 UNBLACKLIST
-    if role in member.roles:
-        await member.remove_roles(role, reason="Blacklist removed")
-
-        new_line = f"\n- {target} | Unblacklisted by {staff}"
-        await message.edit(content=content + new_line)
-
+    # 🔓 TOGGLE OFF
+    if existing_line:
+        lines.remove(existing_line)
+        await message.edit(content="\n".join(lines))
         await interaction.followup.send(
-            f"✅ {target} has been unblacklisted.",
+            f"✅ {user_mention} has been **unblacklisted**.",
             ephemeral=True
         )
         return
 
-    # 🚫 BLACKLIST
+    # 🚫 TOGGLE ON
     if not reason:
         await interaction.followup.send(
             "❌ You must provide a reason when blacklisting.",
@@ -99,13 +91,13 @@ async def blacklist(
         )
         return
 
-    await member.add_roles(role, reason=reason)
+    lines.append(
+        f"- {user_mention} | Blacklisted by {interaction.user.mention} | *{reason}*"
+    )
 
-    new_line = f"\n- {target} | Blacklisted by {staff} | *{reason}*"
-    await message.edit(content=content + new_line)
-
+    await message.edit(content="\n".join(lines))
     await interaction.followup.send(
-        f"🚫 {target} has been blacklisted.",
+        f"🚫 {user_mention} has been **blacklisted**.",
         ephemeral=True
     )
 

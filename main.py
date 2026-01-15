@@ -121,12 +121,10 @@ async def on_member_join(member):
 
     # Generate Discord timestamp
     timestamp = int(time.time())
-    new_entry = f"- {member.mention} | <t:{timestamp}>\n"
-
-    # Append new entry to existing message
-    updated_content = message.content + new_entry
+    new_entry = f"- {member.mention} | <t:{timestamp}:f>\n"  # :f gives full date/time
+    # Append with extra newline to ensure it renders properly
+    updated_content = message.content + "\n" + new_entry
     await message.edit(content=updated_content)
-    
 # -------- EMBED BUILDER --------
 def mod_embed(guild, action, reason, moderator: discord.Member):
     role = moderator.top_role.name if moderator.top_role else "Staff"

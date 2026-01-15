@@ -38,17 +38,26 @@ BLACKLIST_ROLE_ID = 1448918566035263637
 BLACKLIST_CHANNEL_ID = 1461038411661054290
 BLACKLIST_MESSAGE_ID = 1461039199875629207
 
-@bot.tree.command(name="blacklist", description="Toggle blacklist for a member")
+@bot.tree.command(name="blacklist", description="Toggle blacklist for a user by ID")
 @app_commands.describe(
-    member="Member to blacklist / unblacklist",
+    user_id="User ID to blacklist / unblacklist",
     reason="Reason (required when blacklisting)"
 )
 async def blacklist(
     interaction: discord.Interaction,
-    member: discord.Member,
+    user_id: str,
     reason: str | None = None
 ):
     await interaction.response.defer(ephemeral=True)
+
+    try:
+        member = interaction.guild.get_member(int(user_id))
+    except:
+        member = None
+
+    if member is None:
+        await interaction.followup.send("❌ Member not found in this server.", ephemeral=True)
+        return
 
     role = interaction.guild.get_role(BLACKLIST_ROLE_ID)
     if role is None:
@@ -64,7 +73,7 @@ async def blacklist(
 
     content = message.content.rstrip()  # prevents line merge bug
     staff = interaction.user.mention
-    target = member.mention
+    target = f"<@{member.id}>"
 
     # 🔓 UNBLACKLIST
     if role in member.roles:
